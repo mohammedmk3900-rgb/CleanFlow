@@ -1,8 +1,8 @@
 #pragma once
 namespace cleanflow {
 enum class WorkspaceState { Empty, Ready, Active, Busy, Unavailable };
-inline const char* workspaceStateName(WorkspaceState s) {
-    switch (s) {
+constexpr const char* toString(WorkspaceState state) noexcept {
+    switch (state) {
     case WorkspaceState::Empty: return "Empty";
     case WorkspaceState::Ready: return "Ready";
     case WorkspaceState::Active: return "Active";
@@ -11,4 +11,4 @@ inline const char* workspaceStateName(WorkspaceState s) {
     }
     return "Unknown";
 }
-} // namespace cleanflow
+}
