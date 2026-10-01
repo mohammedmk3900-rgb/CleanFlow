@@ -1,56 +1,100 @@
 # CleanFlow Architecture
 
-## Product Principle
+## Product boundary
 
-CleanFlow is a switching layer around Photoshop.
+CleanFlow is a Windows-first Photoshop switching layer. Photoshop remains responsible for cleaning, editing, Actions, documents, layers, saving, and quality decisions.
 
-The cleaner remains in control of Photoshop. CleanFlow reduces dead time and context-switching overhead by making multiple Photoshop workspaces quick to reach.
+## Requirements
 
-## Current scope
+### Functional
 
-- Photoshop window discovery
-- Workspace slots
-- Focus and restore
-- Global F1-F4 switching
-- Minimal UI
+- Discover visible top-level Photoshop windows.
+- Maintain four stable user-facing slots.
+- Assign newly discovered windows to free slots.
+- Preserve surviving slot assignments across refreshes.
+- Restore minimized Photoshop windows.
+- Switch with F1-F4 when the corresponding global hotkey is registered.
+- Provide explicit UI status for slot availability and hotkey registration.
+- Verify foreground activation after a switch attempt.
 
-CleanFlow does **not** perform cleaning work.
+### Non-functional
 
-### Explicitly out of scope
+- No Photoshop document manipulation.
+- No privilege escalation requirement.
+- No licensing, activation, mutex, or security bypass.
+- Native Windows behavior must be treated as fallible and reported as such.
+- Core slot management must remain independently testable.
 
-- AI cleaning
-- Automatic cleaning
-- Photoshop Actions
-- Batch processing
-- Document manipulation
-- Layer manipulation
-- File transformation
-- Licensing or activation bypasses
-- Mutex or security bypasses
+## Architecture
 
-## Layering
-
-```text
-UI
+```
+QML
  │
  ▼
-Workspace / Switching Domain
+PhotoshopWindowManager
  │
- ▼
-Photoshop Platform Adapter
+ ├── PhotoshopSlotRegistry
  │
- ▼
-Windows / Win32
+ └── Windows / Win32
+      ├── EnumWindows
+      ├── Process inspection
+      ├── RegisterHotKey
+      ├── WM_HOTKEY
+      └── SetForegroundWindow
 ```
 
-The domain layer describes workspace slots without knowing about Windows or HWNDs. The platform layer discovers Photoshop windows and performs focus/restore operations. The UI exposes the current workspaces and lets the cleaner switch manually.
+The domain registry has no Win32 dependency. Windows-specific behavior remains in the platform adapter.
 
-## Validation boundary
+## Slot identity
 
-Multiple Photoshop instances are a product dependency to validate on the client's actual Photoshop installation.
+The public slot number is not based on current `EnumWindows` ordering.
 
-CleanFlow must not bypass Photoshop licensing, activation, mutexes, or security controls to create additional instances.
+A discovered window is assigned to the first free slot. A known window keeps its existing slot during refresh. If a tracked window disappears, its slot becomes free.
 
-## Design rule
+This provides stable behavior without introducing persistent storage before it is needed.
 
-If a feature changes what Photoshop edits, that feature does not belong in the switching layer.
+## Native event handling
+
+Windows global hotkeys are registered through `RegisterHotKey`. Qt receives system-wide `WM_HOTKEY` messages through `QAbstractNativeEventFilter`.
+
+Hotkey registration is tracked independently for F1, F2, F3, and F4. A conflict with one key does not make the other keys appear healthy.
+
+## Foreground activation
+
+Switching uses:
+
+1. Validate the tracked HWND.
+2. Restore it if minimized.
+3. Call `SetForegroundWindow`.
+4. Verify `GetForegroundWindow()`.
+5. Report failure when Windows refuses activation.
+
+No thread-input attachment or forced foreground hacks are used in this stage.
+
+## Multi-instance assumption
+
+Independent concurrent Photoshop instances are **not assumed**.
+
+The actual target Photoshop installation must validate:
+
+- multiple independent processes,
+- independent windows,
+- concurrent operations,
+- independent documents,
+- switching behavior,
+- save/close behavior,
+- resource impact.
+
+CleanFlow will not bypass licensing, activation, mutexes, or security controls to create instances.
+
+## Explicit non-goals
+
+- AI cleaning
+- automatic cleaning
+- Photoshop Actions
+- batch processing
+- document/layer manipulation
+- file transformation
+- process injection
+- mutex bypass
+- licensing bypass
