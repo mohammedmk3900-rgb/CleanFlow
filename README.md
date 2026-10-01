@@ -1,47 +1,71 @@
 # CleanFlow
 
-**Parallel Workspace for Manga & Manhwa Cleaning**
+**Photoshop Switching Workspace**
 
-CleanFlow is a Windows-first workflow orchestrator designed to reduce idle time in manga and manhwa cleaning workflows.
+CleanFlow is a Windows-first desktop utility for manga/manhwa cleaners. It reduces waiting and context-switching overhead while Photoshop remains the cleaner's primary and fully manual tool.
 
-The core idea is simple:
+## What CleanFlow does
 
-> Photoshop remains the cleaner's main tool. CleanFlow removes waiting time around Photoshop instead of replacing it.
+- Discovers visible Photoshop windows.
+- Maintains four stable switching slots.
+- Provides F1-F4 global switching when the keys are available.
+- Restores minimized Photoshop windows.
+- Verifies foreground activation after switching.
+- Reports unavailable slots and hotkey conflicts.
+- Keeps the switching layer independent from Photoshop document editing.
 
-## Goals
+## What CleanFlow does not do
 
-- Track independent Photoshop workers.
-- Queue and assign cleaning jobs.
-- Reduce idle time while Photoshop processes an operation.
-- Keep input, working, and output files clearly separated.
-- Verify outputs before marking jobs complete.
-- Support fast human switching between workers.
-- Keep the workflow local-first.
+CleanFlow does **not**:
 
-## Initial Architecture
+- clean images;
+- use AI to clean pages;
+- run Photoshop Actions;
+- batch-process documents;
+- modify documents or layers;
+- automate the cleaner's decisions;
+- inject into Photoshop;
+- bypass licensing, activation, mutexes, or security controls.
+
+## Architecture
 
 - C++23
-- Qt / QML
+- Qt 6 / QML
 - CMake + Ninja
-- SQLite
 - Win32 platform integration
+- Small domain registry with no Windows dependency
 
-## Important Constraint
+The application intentionally uses a modular desktop architecture rather than distributed services or unnecessary infrastructure.
 
-Multi-instance Photoshop support is **not assumed**.
+## Validation boundary
 
-The first implementation milestone is a proof of concept that verifies whether the target Photoshop version can support genuinely independent concurrent workers and whether actions/processes can run concurrently without bypassing licensing or security mechanisms.
+Independent concurrent Photoshop instances are a runtime hypothesis, not an assumption.
 
-## Non-Goals
+The client's actual Photoshop installation must validate:
 
-CleanFlow is not intended to:
+1. independent instance creation;
+2. independent windows;
+3. concurrent processing;
+4. switching while another instance is processing;
+5. save/close behavior;
+6. resource impact.
 
-- Replace Photoshop.
-- Automatically redraw every page.
-- Be an AI manga cleaner.
-- Circumvent Photoshop licensing or security.
-- Overwrite original source files.
+CleanFlow will not bypass Photoshop restrictions to force this behavior.
+
+## Build
+
+Use a Qt 6 C++23 environment with CMake and Ninja.
+
+Example:
+
+```text
+cmake -S . -B build -G Ninja
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Windows is the primary runtime target.
 
 ## Status
 
-Early architecture / proof-of-concept stage.
+Switching foundation / MVP implementation. Runtime validation on the target Windows + Photoshop environment remains required.

@@ -1,39 +1,100 @@
 # CleanFlow Architecture
 
-## Product Principle
+## Product boundary
 
-CleanFlow is a workflow orchestrator around Photoshop. It reduces cleaner idle time without replacing the human-controlled Photoshop workflow.
+CleanFlow is a Windows-first Photoshop switching layer. Photoshop remains responsible for cleaning, editing, Actions, documents, layers, saving, and quality decisions.
 
-## Components
+## Requirements
 
-- UI: Worker Grid, Queue, Project, Status
-- Orchestrator: Scheduler, Job Manager, Worker Manager, Session Manager
-- Photoshop Integration: Adapter, Action Runner, Document Controller, State Detector
-- Human Workflow: Focus Switching, Global Hotkeys
-- File Pipeline: Input, Working, Output, Verification
-- Persistence: SQLite
+### Functional
 
-## Worker Lifecycle
+- Discover visible top-level Photoshop windows.
+- Maintain four stable user-facing slots.
+- Assign newly discovered windows to free slots.
+- Preserve surviving slot assignments across refreshes.
+- Restore minimized Photoshop windows.
+- Switch with F1-F4 when the corresponding global hotkey is registered.
+- Provide explicit UI status for slot availability and hotkey registration.
+- Verify foreground activation after a switch attempt.
 
-OFFLINE -> STARTING -> READY -> WORKING/PROCESSING -> VALIDATING -> READY
+### Non-functional
 
-Errors transition to ERROR and may be retried.
+- No Photoshop document manipulation.
+- No privilege escalation requirement.
+- No licensing, activation, mutex, or security bypass.
+- Native Windows behavior must be treated as fallible and reported as such.
+- Core slot management must remain independently testable.
 
-## Job Lifecycle
+## Architecture
 
-QUEUED -> ASSIGNED -> STARTING -> PROCESSING -> VALIDATING -> COMPLETED
+```
+QML
+ │
+ ▼
+PhotoshopWindowManager
+ │
+ ├── PhotoshopSlotRegistry
+ │
+ └── Windows / Win32
+      ├── EnumWindows
+      ├── Process inspection
+      ├── RegisterHotKey
+      ├── WM_HOTKEY
+      └── SetForegroundWindow
+```
 
-Failures become FAILED and can transition to RETRY.
+The domain registry has no Win32 dependency. Windows-specific behavior remains in the platform adapter.
 
-## Multi-Instance Proof of Concept
+## Slot identity
 
-The first platform milestone is deliberately small:
+The public slot number is not based on current `EnumWindows` ordering.
 
-1. Detect or launch Photoshop.
-2. Enumerate Photoshop processes and windows.
-3. Track PID and window handles.
-4. Determine whether multiple independent workers can coexist on the target installation.
-5. Determine whether concurrent actions can actually execute.
-6. Verify output files.
+A discovered window is assigned to the first free slot. A known window keeps its existing slot during refresh. If a tracked window disappears, its slot becomes free.
 
-CleanFlow must not bypass licensing, activation, or security controls.
+This provides stable behavior without introducing persistent storage before it is needed.
+
+## Native event handling
+
+Windows global hotkeys are registered through `RegisterHotKey`. Qt receives system-wide `WM_HOTKEY` messages through `QAbstractNativeEventFilter`.
+
+Hotkey registration is tracked independently for F1, F2, F3, and F4. A conflict with one key does not make the other keys appear healthy.
+
+## Foreground activation
+
+Switching uses:
+
+1. Validate the tracked HWND.
+2. Restore it if minimized.
+3. Call `SetForegroundWindow`.
+4. Verify `GetForegroundWindow()`.
+5. Report failure when Windows refuses activation.
+
+No thread-input attachment or forced foreground hacks are used in this stage.
+
+## Multi-instance assumption
+
+Independent concurrent Photoshop instances are **not assumed**.
+
+The actual target Photoshop installation must validate:
+
+- multiple independent processes,
+- independent windows,
+- concurrent operations,
+- independent documents,
+- switching behavior,
+- save/close behavior,
+- resource impact.
+
+CleanFlow will not bypass licensing, activation, mutexes, or security controls to create instances.
+
+## Explicit non-goals
+
+- AI cleaning
+- automatic cleaning
+- Photoshop Actions
+- batch processing
+- document/layer manipulation
+- file transformation
+- process injection
+- mutex bypass
+- licensing bypass
