@@ -2,38 +2,55 @@
 
 ## Product Principle
 
-CleanFlow is a workflow orchestrator around Photoshop. It reduces cleaner idle time without replacing the human-controlled Photoshop workflow.
+CleanFlow is a switching layer around Photoshop.
 
-## Components
+The cleaner remains in control of Photoshop. CleanFlow reduces dead time and context-switching overhead by making multiple Photoshop workspaces quick to reach.
 
-- UI: Worker Grid, Queue, Project, Status
-- Orchestrator: Scheduler, Job Manager, Worker Manager, Session Manager
-- Photoshop Integration: Adapter, Action Runner, Document Controller, State Detector
-- Human Workflow: Focus Switching, Global Hotkeys
-- File Pipeline: Input, Working, Output, Verification
-- Persistence: SQLite
+## Current scope
 
-## Worker Lifecycle
+- Photoshop window discovery
+- Workspace slots
+- Focus and restore
+- Global F1-F4 switching
+- Minimal UI
 
-OFFLINE -> STARTING -> READY -> WORKING/PROCESSING -> VALIDATING -> READY
+CleanFlow does **not** perform cleaning work.
 
-Errors transition to ERROR and may be retried.
+### Explicitly out of scope
 
-## Job Lifecycle
+- AI cleaning
+- Automatic cleaning
+- Photoshop Actions
+- Batch processing
+- Document manipulation
+- Layer manipulation
+- File transformation
+- Licensing or activation bypasses
+- Mutex or security bypasses
 
-QUEUED -> ASSIGNED -> STARTING -> PROCESSING -> VALIDATING -> COMPLETED
+## Layering
 
-Failures become FAILED and can transition to RETRY.
+```text
+UI
+ │
+ ▼
+Workspace / Switching Domain
+ │
+ ▼
+Photoshop Platform Adapter
+ │
+ ▼
+Windows / Win32
+```
 
-## Multi-Instance Proof of Concept
+The domain layer describes workspace slots without knowing about Windows or HWNDs. The platform layer discovers Photoshop windows and performs focus/restore operations. The UI exposes the current workspaces and lets the cleaner switch manually.
 
-The first platform milestone is deliberately small:
+## Validation boundary
 
-1. Detect or launch Photoshop.
-2. Enumerate Photoshop processes and windows.
-3. Track PID and window handles.
-4. Determine whether multiple independent workers can coexist on the target installation.
-5. Determine whether concurrent actions can actually execute.
-6. Verify output files.
+Multiple Photoshop instances are a product dependency to validate on the client's actual Photoshop installation.
 
-CleanFlow must not bypass licensing, activation, or security controls.
+CleanFlow must not bypass Photoshop licensing, activation, mutexes, or security controls to create additional instances.
+
+## Design rule
+
+If a feature changes what Photoshop edits, that feature does not belong in the switching layer.
