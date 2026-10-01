@@ -1,42 +1,39 @@
 #include "WorkspaceRegistry.h"
-
 namespace cleanflow {
-
-WorkspaceRegistry::WorkspaceRegistry()
-{
+WorkspaceRegistry::WorkspaceRegistry() {
     m_slots.reserve(kMaxSlots);
-
-    for (int i = 0; i < kMaxSlots; ++i)
-    {
+    for (int i = 1; i <= kMaxSlots; ++i) {
         WorkspaceSlot slot;
-        slot.number = i + 1;
-        slot.label = QStringLiteral("F%1").arg(i + 1);
-        m_slots.append(slot);
+        slot.number = i;
+        slot.shortcut = QStringLiteral("F%1").arg(i);
+        m_slots.append(std::move(slot));
     }
 }
-
-void WorkspaceRegistry::clear()
-{
-    for (auto& slot : m_slots)
-    {
-        slot.windowTitle.clear();
-        slot.available = false;
+void WorkspaceRegistry::reset() {
+    for (auto& slot : m_slots) {
+        const int number = slot.number;
+        const QString shortcut = slot.shortcut;
+        slot = {};
+        slot.number = number;
+        slot.shortcut = shortcut;
     }
 }
-
-void WorkspaceRegistry::setWindow(int slot, const QString& title)
-{
-    const int index = slot - 1;
-    if (index < 0 || index >= m_slots.size())
-        return;
-
-    m_slots[index].windowTitle = title;
-    m_slots[index].available = true;
+bool WorkspaceRegistry::assign(int slotNumber, quintptr handle, quint64 pid, const QString& title) {
+    if (slotNumber < 1 || slotNumber > m_slots.size() || handle == 0) return false;
+    auto& slot = m_slots[slotNumber - 1];
+    slot.windowHandle = handle;
+    slot.processId = pid;
+    slot.windowTitle = title;
+    slot.state = WorkspaceState::Ready;
+    return true;
 }
-
-const QVector<WorkspaceSlot>& WorkspaceRegistry::slots() const
-{
-    return m_slots;
+bool WorkspaceRegistry::updateState(int slotNumber, WorkspaceState state) {
+    if (slotNumber < 1 || slotNumber > m_slots.size()) return false;
+    m_slots[slotNumber - 1].state = state;
+    return true;
 }
-
-} // namespace cleanflow
+const WorkspaceSlot* WorkspaceRegistry::find(int slotNumber) const noexcept {
+    if (slotNumber < 1 || slotNumber > m_slots.size()) return nullptr;
+    return &m_slots[slotNumber - 1];
+}
+}
