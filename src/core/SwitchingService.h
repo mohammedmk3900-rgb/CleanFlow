@@ -1,19 +1,21 @@
 #pragma once
 #include <QObject>
-#include "WorkspaceRegistry.h"
 namespace cleanflow {
-class SwitchingService final : public QObject {
+class SwitchingService : public QObject {
     Q_OBJECT
     Q_PROPERTY(int activeSlot READ activeSlot NOTIFY activeSlotChanged)
 public:
-    explicit SwitchingService(QObject* parent=nullptr);
-    const WorkspaceRegistry& registry() const { return m_registry; }
-    int activeSlot() const { return m_activeSlot; }
-    void setActiveSlot(int slot);
+    explicit SwitchingService(QObject* parent = nullptr) : QObject(parent) {}
+    int activeSlot() const noexcept { return m_activeSlot; }
+    bool setActiveSlot(int slot) {
+        if (slot < 0 || slot > 4 || slot == m_activeSlot) return false;
+        m_activeSlot = slot;
+        emit activeSlotChanged();
+        return true;
+    }
 signals:
     void activeSlotChanged();
 private:
-    WorkspaceRegistry m_registry;
-    int m_activeSlot=0;
+    int m_activeSlot = 0;
 };
-} // namespace cleanflow
+}
