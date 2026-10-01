@@ -1,15 +1,15 @@
 #pragma once
-
+#include "WorkspaceState.h"
 #include <QString>
-
+#include <QtGlobal>
 namespace cleanflow {
-
-struct WorkspaceSlot
-{
+struct WorkspaceSlot {
     int number = 0;
-    QString label;
+    QString shortcut;
     QString windowTitle;
-    bool available = false;
+    quintptr windowHandle = 0;
+    quint64 processId = 0;
+    WorkspaceState state = WorkspaceState::Empty;
+    bool isAvailable() const noexcept { return windowHandle != 0; }
 };
-
-} // namespace cleanflow
+}
