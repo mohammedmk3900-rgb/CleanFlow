@@ -9,7 +9,7 @@ qt_standard_project_setup()
 
 qt_add_executable(CleanFlow
     app/main.cpp
-    src/core/WorkspaceRegistry.cpp
+    src/core/WorkspaceRegistry.cpp\n    src/core/SwitchingService.cpp
     src/platform/windows/PhotoshopWindowManager.cpp
 )
 
