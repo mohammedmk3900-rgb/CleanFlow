@@ -1,18 +1,26 @@
-# Cleaner Workflow Model
+# Cleaner Workflow
 
-CleanFlow is built around the real human cleaning loop.
+CleanFlow is designed around a human-controlled Photoshop workflow.
 
-1. Open source page.
-2. Inspect the page.
-3. Select the Photoshop operation.
-4. Perform manual cleaning or redrawing.
-5. Run slower processing operations when useful.
-6. Inspect the result.
-7. Save/export.
-8. Continue to the next page.
+1. The cleaner opens or prepares a page in Photoshop.
+2. The cleaner performs the cleaning work manually.
+3. A Photoshop operation may take time to finish.
+4. While another Photoshop workspace is available, the cleaner switches to it.
+5. The cleaner continues working without waiting for the previous workspace.
+6. The cleaner switches back when needed.
 
-The optimization target is idle time, not Photoshop's internal execution speed.
+## What CleanFlow changes
 
-Human-controlled work includes selection, clone/healing, brush work, redrawing, line-art restoration, inspection, and quality control.
+It reduces time spent waiting for Photoshop by making workspace switching immediate.
 
-Automation-friendly work includes repeatable Actions, batch-like operations, save/export, file verification, and queue management.
+## What CleanFlow does not change
+
+- Cleaning decisions
+- Photoshop tools
+- Documents
+- Layers
+- Actions
+- Export behavior
+- Quality-control decisions
+
+Photoshop remains the source of truth for the actual cleaning workflow.
