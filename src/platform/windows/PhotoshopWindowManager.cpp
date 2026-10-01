@@ -224,10 +224,7 @@ BOOL CALLBACK PhotoshopWindowManager::enumWindowsProc(
     if (!candidates)
         return TRUE;
 
-    Candidate candidate;
-
-    // Only consider visible, top-level windows.
-    if (GetWindow(hwnd, GW_OWNER) != nullptr)
+    if (GetWindow(hwnd, GW_OWNER) != nullptr || !IsWindowVisible(hwnd))
         return TRUE;
 
     DWORD processId = 0;
@@ -253,6 +250,7 @@ BOOL CALLBACK PhotoshopWindowManager::enumWindowsProc(
     if (executable.compare(QStringLiteral("Photoshop.exe"), Qt::CaseInsensitive) != 0)
         return TRUE;
 
+    Candidate candidate;
     candidate.handle = hwnd;
     candidate.processId = processId;
 
@@ -289,7 +287,7 @@ bool PhotoshopWindowManager::inspectPhotoshopWindow(
         return false;
 
     wchar_t path[32768] {};
-    DWORD size = static_cast<DWORD>(std::size(path));
+    DWORD size = static_cast<DWORD>(32768);
 
     const bool queried =
         QueryFullProcessImageNameW(
@@ -323,7 +321,7 @@ QString PhotoshopWindowManager::windowTitle(HWND hwnd) const
     wchar_t title[512] {};
 
     const int length =
-        GetWindowTextW(hwnd, title, std::size(title));
+        GetWindowTextW(hwnd, title, 512);
 
     if (length <= 0)
         return QStringLiteral("Adobe Photoshop");
