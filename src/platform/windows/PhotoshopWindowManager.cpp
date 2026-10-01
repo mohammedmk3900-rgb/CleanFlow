@@ -240,7 +240,7 @@ BOOL CALLBACK PhotoshopWindowManager::enumWindowsProc(
         return TRUE;
 
     wchar_t path[32768] {};
-    DWORD size = static_cast<DWORD>(std::size(path));
+    DWORD size = 32768;
     const bool queried = QueryFullProcessImageNameW(process, 0, path, &size);
     CloseHandle(process);
 
@@ -257,7 +257,7 @@ BOOL CALLBACK PhotoshopWindowManager::enumWindowsProc(
     candidate.processId = processId;
 
     wchar_t title[512] {};
-    const int length = GetWindowTextW(hwnd, title, std::size(title));
+    const int length = GetWindowTextW(hwnd, title, 512);
     candidate.title = length > 0
         ? QString::fromWCharArray(title, length)
         : QStringLiteral("Adobe Photoshop");
