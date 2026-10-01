@@ -230,9 +230,37 @@ BOOL CALLBACK PhotoshopWindowManager::enumWindowsProc(
     if (GetWindow(hwnd, GW_OWNER) != nullptr)
         return TRUE;
 
-    PhotoshopWindowManager probe;
-    if (!probe.inspectPhotoshopWindow(hwnd, candidate))
+    DWORD processId = 0;
+    GetWindowThreadProcessId(hwnd, &processId);
+    if (processId == 0)
         return TRUE;
+
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
+    if (!process)
+        return TRUE;
+
+    wchar_t path[32768] {};
+    DWORD size = static_cast<DWORD>(std::size(path));
+    const bool queried = QueryFullProcessImageNameW(process, 0, path, &size);
+    CloseHandle(process);
+
+    if (!queried)
+        return TRUE;
+
+    const QString executable =
+        QFileInfo(QString::fromWCharArray(path)).fileName();
+
+    if (executable.compare(QStringLiteral("Photoshop.exe"), Qt::CaseInsensitive) != 0)
+        return TRUE;
+
+    candidate.handle = hwnd;
+    candidate.processId = processId;
+
+    wchar_t title[512] {};
+    const int length = GetWindowTextW(hwnd, title, std::size(title));
+    candidate.title = length > 0
+        ? QString::fromWCharArray(title, length)
+        : QStringLiteral("Adobe Photoshop");
 
     candidates->append(candidate);
     return TRUE;
